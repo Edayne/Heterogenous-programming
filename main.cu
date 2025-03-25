@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
     printf("%d ms\n", ((end - start) / CLOCKS_PER_SEC) * 1000.0);
     
     cudaMemcpy(filtered_image, d_dst, width*height*channels, cudaMemcpyDeviceToHost);
-    printf("%lf ms\n", elapsedTime);
+    
     // Save the output image
     if (!stbi_write_png(argv[2], width, height, channels, filtered_image, width * channels)) {
         printf("Error saving the image!\n");
