@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
-#include <cuda_runtime.h>
 #include <time.h>
 
 // Gaussian function
@@ -123,14 +122,8 @@ int main(int argc, char *argv[]) {
     bilateral_filter<<<gridSize, blockSize>>>(image, filtered_image, width, height, channels, 5, 75.0, 75.0);
 
     clock_t end = clock();
-    printf("%d ms\n", (double)(end - start) / CLOCKS_PER_SEC) * 1000.0);
-    // Stop GPU timing
-    cudaEventRecord(stop, 0);
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(elapsedTime, start, stop);
-
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
+    printf("%d ms\n", ((end - start) / CLOCKS_PER_SEC) * 1000.0);
+    
     cudaMemcpy(filtered_image, d_dst, width*height*channels, cudaMemcpyDeviceToHost);
     printf("%lf ms\n", elapsedTime);
     // Save the output image
