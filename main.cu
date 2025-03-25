@@ -7,6 +7,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <cuda_runtime.h>
+#include <time.h>
 
 // Gaussian function
 __device__ float gaussian(float x, float sigma) {
@@ -113,20 +114,16 @@ int main(int argc, char *argv[]) {
     cudaMemcpy(d_dst, image, width*height*channels, cudaMemcpyHostToDevice);
     
     // Calcul du temps
-    cudaEvent_t start, stop;
-    float elapsedTime = 0.0f;
+    clock_t start = clock();
 
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-
-    // Start GPU timing
-    cudaEventRecord(start, 0);
 
     // Apply the bilateral filter
     dim3 blockSize(16, 16);
     dim3 gridSize((width + blockSize.x - 1)/blockSize.x, (height + blockSize.y - 1)/blockSize.y);
     bilateral_filter<<<gridSize, blockSize>>>(image, filtered_image, width, height, channels, 5, 75.0, 75.0);
 
+    clock_t end = clock();
+    printf("%d ms\n", (double)(end - start) / CLOCKS_PER_SEC) * 1000.0);
     // Stop GPU timing
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
