@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include <cuda_runtime.h>
 
 // Gaussian function
 __device__ float gaussian(float x, float sigma) {
@@ -14,6 +15,7 @@ __device__ float gaussian(float x, float sigma) {
 
 // Manual bilateral filter
 __global__ void bilateral_filter(unsigned char *src, unsigned char *dst, int width, int height, int channels, int d, double sigma_color, double sigma_space) {
+    
     int radius = d / 2;
 
     // Precompute spatial Gaussian weights
@@ -109,15 +111,29 @@ int main(int argc, char *argv[]) {
     cudaMalloc((void**)&d_dst, width * height * channels);
 
     cudaMemcpy(d_dst, image, width*height*channels, cudaMemcpyHostToDevice);
+    cudaEvent_t start, stop;
+    float elapsedTime = 0.0f;
+
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    // Start GPU timing
+    cudaEventRecord(start, 0);
 
     // Apply the bilateral filter
     dim3 blockSize(16, 16);
     dim3 gridSize((width + blockSize.x - 1)/blockSize.x, (height + blockSize.y - 1)/blockSize.y);
     bilateral_filter<<<gridSize, blockSize>>>(image, filtered_image, width, height, channels, 5, 75.0, 75.0);
 
+    // Stop GPU timing
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop);
 
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
     cudaMemcpy(filtered_image, d_dst, width*height*channels, cudaMemcpyDeviceToHost);
-
+    printf("%lf ms\n", elapsedTime);
     // Save the output image
     if (!stbi_write_png(argv[2], width, height, channels, filtered_image, width * channels)) {
         printf("Error saving the image!\n");

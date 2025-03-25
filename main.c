@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include <time.h>
 
 // Gaussian function
 double gaussian(double x, double sigma) {
@@ -13,14 +14,16 @@ double gaussian(double x, double sigma) {
 }
 
 // Manual bilateral filter
-void bilateral_filter(unsigned char *src, unsigned char *dst, int width, int height, int channels, int d, double sigma_color, double sigma_space) {
+double bilateral_filter(unsigned char *src, unsigned char *dst, int width, int height, int channels, int d, double sigma_color, double sigma_space) {
+    clock_t start = clock();
+
     int radius = d / 2;
 
     // Precompute spatial Gaussian weights
     double *spatial_weights = (double *)malloc(d * d * sizeof(double));
     if (!spatial_weights) {
         printf("Memory allocation for spatial weights failed!\n");
-        return;
+        return -1.0;
     }
 
     for (int i = 0; i < d; i++) {
@@ -74,7 +77,11 @@ void bilateral_filter(unsigned char *src, unsigned char *dst, int width, int hei
     }
 
     free(spatial_weights);
+    clock_t end = clock();
+    return ((double)(end - start) / CLOCKS_PER_SEC) * 1000.0; 
 }
+
+
 
 // Main function
 int main(int argc, char *argv[]) {
@@ -106,7 +113,8 @@ int main(int argc, char *argv[]) {
     }
     
     // Apply the bilateral filter
-    bilateral_filter(image, filtered_image, width, height, channels, 5, 75.0, 75.0);
+    double time_cpu = bilateral_filter(image, filtered_image, width, height, channels, 5, 75.0, 75.0);
+    printf("%lf ms\n", time_cpu);
 
     // Save the output image
     if (!stbi_write_png(argv[2], width, height, channels, filtered_image, width * channels)) {
