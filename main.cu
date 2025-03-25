@@ -120,6 +120,7 @@ int main(int argc, char *argv[]) {
     dim3 blockSize(16, 16);
     dim3 gridSize((width + blockSize.x - 1)/blockSize.x, (height + blockSize.y - 1)/blockSize.y);
     bilateral_filter<<<gridSize, blockSize>>>(image, filtered_image, width, height, channels, 5, 75.0, 75.0);
+    printf("Hello");
 
     clock_t end = clock();
     printf("%d ms\n", ((end - start) / CLOCKS_PER_SEC) * 1000.0);
