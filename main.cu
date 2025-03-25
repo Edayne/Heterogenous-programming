@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
     cudaMemcpy(d_dst, image, width*height*channels, cudaMemcpyHostToDevice);
     
     // Calcul du temps
-    clock_t start = clock();
+    time_t start = time();
 
 
     // Apply the bilateral filter
@@ -122,8 +122,8 @@ int main(int argc, char *argv[]) {
     bilateral_filter<<<gridSize, blockSize>>>(image, filtered_image, width, height, channels, 5, 75.0, 75.0);
     printf("Hello");
 
-    clock_t end = clock();
-    printf("%d ms\n", ((end - start) / CLOCKS_PER_SEC) * 1000.0);
+    time_t end = time();
+    printf("%lf ms\n", difftime(end, start));
     
     cudaMemcpy(filtered_image, d_dst, width*height*channels, cudaMemcpyDeviceToHost);
     
