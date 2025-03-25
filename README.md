@@ -13,7 +13,7 @@ Il est à noter que le test CPU a été effectué sur ma machine personelle, le 
 
 # Préparation
 
-`̀``sh
+```sh
 git clone https://github.com/Edayne/Heterogenous-programming
 cd Heterogenous-programming
 ``̀
