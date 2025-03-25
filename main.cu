@@ -111,6 +111,8 @@ int main(int argc, char *argv[]) {
     cudaMalloc((void**)&d_dst, width * height * channels);
 
     cudaMemcpy(d_dst, image, width*height*channels, cudaMemcpyHostToDevice);
+    
+    // Calcul du temps
     cudaEvent_t start, stop;
     float elapsedTime = 0.0f;
 
@@ -128,7 +130,7 @@ int main(int argc, char *argv[]) {
     // Stop GPU timing
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventElapsedTime(elapsedTime, start, stop);
 
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
