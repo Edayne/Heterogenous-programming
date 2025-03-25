@@ -8,8 +8,8 @@
 #include <stdio.h>
 
 // Gaussian function
-double gaussian(double x, double sigma) {
-    return exp(-(x * x) / (2.0 * sigma * sigma));
+__device__ float gaussian(float x, float sigma) {
+    return __expf(-(x * x) / (2.0f * sigma * sigma));  // Use __expf() for better performance
 }
 
 // Manual bilateral filter
@@ -26,7 +26,7 @@ __global__ void bilateral_filter(unsigned char *src, unsigned char *dst, int wid
     for (int i = 0; i < d; i++) {
         for (int j = 0; j < d; j++) {
             int x = i - radius, y = j - radius;
-            spatial_weights[i * d + j] = gaussian(sqrt(x * x + y * y), sigma_space);
+            spatial_weights[i * d + j] = gaussian(sqrtf(x * x + y * y), sigma_space);
         }
     }
 
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
 
 
     cudaMemcpy(filtered_image, d_dst, width*height*channels, cudaMemcpyDeviceToHost);
-    
+
     // Save the output image
     if (!stbi_write_png(argv[2], width, height, channels, filtered_image, width * channels)) {
         printf("Error saving the image!\n");
