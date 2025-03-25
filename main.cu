@@ -10,7 +10,7 @@
 
 // Gaussian function
 __device__ float gaussian(float x, float sigma) {
-    return __expf(-(x * x) / (2.0f * sigma * sigma));  // Use __expf() for better performance
+    return __expf(-(x * x) / (2.0f * sigma * sigma));  // On ajoute __device__ pour que la fonction puisse être éxécutée sur GPU
 }
 
 // Manual bilateral filter
@@ -28,11 +28,11 @@ __global__ void bilateral_filter(unsigned char *src, unsigned char *dst, int wid
     for (int i = 0; i < d; i++) {
         for (int j = 0; j < d; j++) {
             int x = i - radius, y = j - radius;
-            spatial_weights[i * d + j] = gaussian(sqrtf(x * x + y * y), sigma_space);
+            spatial_weights[i * d + j] = gaussian(sqrtf(x * x + y * y), sigma_space); //sqrtf au lieu de sqrt pour être reconnu par CUDA
         }
     }
 
-    // Process image
+    // Calcul effectué par pixel, en parallèle au lieu de séquentiel (double boucle for)
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -71,7 +71,7 @@ __global__ void bilateral_filter(unsigned char *src, unsigned char *dst, int wid
     // Normalize and store result
     unsigned char *output_pixel = dst + (y * width + x) * channels;
     for (int c = 0; c < channels; c++) {
-        output_pixel[c] = (unsigned char)(filtered_value[c] / (weight_sum[c] + 1e-6)); // Avoid division by zero
+        output_pixel[c] = (unsigned char)(filtered_value[c] / (weight_sum[c] + 1e-6)); 
     }
 
     free(spatial_weights);
@@ -106,40 +106,42 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
+
+    // Création et allocation des variables travaillant sur GPU
     unsigned char *d_src, *d_dst;
     cudaMalloc((void**)&d_src, width * height * channels);
     cudaMalloc((void**)&d_dst, width * height * channels);
 
     cudaMemcpy(d_dst, image, width*height*channels, cudaMemcpyHostToDevice);
     
-      // **Use CUDA events for accurate timing**
-      cudaEvent_t start, stop;
-      float elapsedTime = 0.0f;
-  
-      cudaEventCreate(&start);
-      cudaEventCreate(&stop);
-  
-      // Start GPU timing
-      cudaEventRecord(start, 0);
-  
-      // Launch bilateral filter
-      dim3 blockSize(16, 16);
-      dim3 gridSize((width + blockSize.x - 1) / blockSize.x, (height + blockSize.y - 1) / blockSize.y);
-      bilateral_filter<<<gridSize, blockSize>>>(d_src, d_dst, width, height, channels, 5, 75.0, 75.0);
-  
-      // Stop GPU timing
-      cudaEventRecord(stop, 0);
-      cudaEventSynchronize(stop);
-      cudaEventElapsedTime(&elapsedTime, start, stop); // Get elapsed time in milliseconds
-  
-      // Print GPU execution time
-      printf("GPU Bilateral Filter Execution Time: %.4f ms\n", elapsedTime);
-  
-      // Cleanup
-      cudaEventDestroy(start);
-      cudaEventDestroy(stop);
-      cudaMemcpy(image, d_dst, width * height * channels, cudaMemcpyDeviceToHost);
-      stbi_write_png(argv[2], width, height, channels, image, width * channels);
+    // Début calcul temps d'éxécution GPU
+    // Potentiellement biaisé car ne prend pas en compte temps de copie ni temps d'éxécution CPU
+    cudaEvent_t start, stop;
+    float elapsedTime = 0.0f;
+
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    cudaEventRecord(start, 0);
+
+    // Launch bilateral filter
+    dim3 blockSize(16, 16);
+    dim3 gridSize((width + blockSize.x - 1) / blockSize.x, (height + blockSize.y - 1) / blockSize.y);
+    bilateral_filter<<<gridSize, blockSize>>>(d_src, d_dst, width, height, channels, 5, 75.0, 75.0);
+
+    // Arrêt du chrono
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&elapsedTime, start, stop); // milliseconds
+
+    // Affichage du temps d'éxécution GPU
+    printf("GPU Bilateral Filter Execution Time: %.4f ms\n", elapsedTime);
+
+    // Nettoyage
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    cudaMemcpy(image, d_dst, width * height * channels, cudaMemcpyDeviceToHost);
+    stbi_write_png(argv[2], width, height, channels, image, width * channels);
     
     // Save the output image
     if (!stbi_write_png(argv[2], width, height, channels, filtered_image, width * channels)) {
