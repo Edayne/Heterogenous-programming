@@ -1,4 +1,4 @@
-# Rendu projet et TP de Heterogenous Programming
+# Rendu TP de Heterogeneous Programming
 
 - Auteurs : Amandine HENRY, Saïf-Eddine KEHILI
 
