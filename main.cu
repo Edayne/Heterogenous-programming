@@ -112,20 +112,34 @@ int main(int argc, char *argv[]) {
 
     cudaMemcpy(d_dst, image, width*height*channels, cudaMemcpyHostToDevice);
     
-    // Calcul du temps
-    time_t start = time(NULL); //start time
-
-    // Apply the bilateral filter
-    dim3 blockSize(16, 16);
-    dim3 gridSize((width + blockSize.x - 1)/blockSize.x, (height + blockSize.y - 1)/blockSize.y);
-    bilateral_filter<<<gridSize, blockSize>>>(image, filtered_image, width, height, channels, 5, 75.0, 75.0);
-    printf("Hello");
-
-    time_t end = time(NULL);
-
-    printf("%lf ms\n", difftime(end, start));
-    
-    cudaMemcpy(filtered_image, d_dst, width*height*channels, cudaMemcpyDeviceToHost);
+      // **Use CUDA events for accurate timing**
+      cudaEvent_t start, stop;
+      float elapsedTime = 0.0f;
+  
+      cudaEventCreate(&start);
+      cudaEventCreate(&stop);
+  
+      // Start GPU timing
+      cudaEventRecord(start, 0);
+  
+      // Launch bilateral filter
+      dim3 blockSize(16, 16);
+      dim3 gridSize((width + blockSize.x - 1) / blockSize.x, (height + blockSize.y - 1) / blockSize.y);
+      bilateral_filter<<<gridSize, blockSize>>>(d_src, d_dst, width, height, channels, 5, 75.0, 75.0);
+  
+      // Stop GPU timing
+      cudaEventRecord(stop, 0);
+      cudaEventSynchronize(stop);
+      cudaEventElapsedTime(&elapsedTime, start, stop); // Get elapsed time in milliseconds
+  
+      // Print GPU execution time
+      printf("GPU Bilateral Filter Execution Time: %.4f ms\n", elapsedTime);
+  
+      // Cleanup
+      cudaEventDestroy(start);
+      cudaEventDestroy(stop);
+      cudaMemcpy(image, d_dst, width * height * channels, cudaMemcpyDeviceToHost);
+      stbi_write_png(argv[2], width, height, channels, image, width * channels);
     
     // Save the output image
     if (!stbi_write_png(argv[2], width, height, channels, filtered_image, width * channels)) {
