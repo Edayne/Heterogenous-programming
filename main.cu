@@ -106,13 +106,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
-
     // Création et allocation des variables travaillant sur GPU
     unsigned char *d_src, *d_dst;
     cudaMalloc((void**)&d_src, width * height * channels);
     cudaMalloc((void**)&d_dst, width * height * channels);
 
-    cudaMemcpy(d_dst, image, width*height*channels, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_src, image, width*height*channels, cudaMemcpyHostToDevice);
     
     // Début calcul temps d'éxécution GPU
     // Potentiellement biaisé car ne prend pas en compte temps de copie ni temps d'éxécution CPU
