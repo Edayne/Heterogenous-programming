@@ -142,13 +142,13 @@ int main(int argc, char *argv[]) {
     cudaMemcpy(image, d_dst, width * height * channels, cudaMemcpyDeviceToHost);
     stbi_write_png(argv[2], width, height, channels, image, width * channels);
     
-    // Save the output image
-    if (!stbi_write_png(argv[2], width, height, channels, filtered_image, width * channels)) {
-        printf("Error saving the image!\n");
-        free(filtered_image);
-        stbi_image_free(image);
-        return 1;
-    }
+    // // Save the output image
+    // if (!stbi_write_png(argv[2], width, height, channels, filtered_image, width * channels)) {
+    //     printf("Error saving the image!\n");
+    //     free(filtered_image);
+    //     stbi_image_free(image);
+    //     return 1;
+    // }
 
     // Free memory
     stbi_image_free(image);
